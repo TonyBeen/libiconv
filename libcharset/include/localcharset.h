@@ -18,9 +18,9 @@
 #ifndef _LOCALCHARSET_H
 #define _LOCALCHARSET_H
 
-#if 1 && BUILDING_LIBCHARSET
+#if (defined(__GNUC__) || defined(__xlC__))
 # define LIBCHARSET_SHLIB_EXPORTED __attribute__((__visibility__("default")))
-#elif defined _MSC_VER && BUILDING_LIBCHARSET
+#elif defined _MSC_VER
 /* When building with MSVC, exporting a symbol means that the object file
    contains a "linker directive" of the form /EXPORT:symbol.  This can be
    inspected through the "objdump -s --section=.drectve FILE" or
