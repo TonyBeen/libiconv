@@ -69,7 +69,7 @@
 /* #undef HAVE__NSGETEXECUTABLEPATH */
 
 /* Define to the value of ${prefix}, as a string. */
-#define INSTALLPREFIX "/usr/local"
+// #define INSTALLPREFIX "/usr/local"
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
