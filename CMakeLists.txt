@@ -5,7 +5,14 @@
 # Please note that the package source code is licensed under its own license.
 
 cmake_minimum_required ( VERSION 3.10 )
-project ( libiconv C )
+project ( libiconv C CXX )
+
+set ( CMAKE_CXX_STANDARD 17 )
+set ( CMAKE_CXX_STANDARD_REQUIRED ON )
+
+# Enable Position Independent Code (-fPIC) for static libraries
+set ( CMAKE_POSITION_INDEPENDENT_CODE ON )
+
 include (cmake/dist.cmake)
 include (configure)
 
@@ -28,22 +35,6 @@ iconv_configure_file (LIBRARY_NAME iconv
   INPUT include/iconv.h.build.in 
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/iconv.h )
 
-iconv_configure_file (LIBRARY_NAME iconv 
-  INPUT srclib/alloca.in.h 
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/srclib/alloca.h )
-
-iconv_configure_file (LIBRARY_NAME iconv 
-  INPUT include/iconv.h.build.in 
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/iconv.h )
-
-iconv_configure_file (LIBRARY_NAME iconv 
-  INPUT srclib/unistd.in.h 
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/srclib/unistd.h @ONLY)
-
-iconv_configure_file (LIBRARY_NAME iconv 
-  INPUT srclib/unitypes.in.h 
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/srclib/unitypes.h )
-
 iconv_configure_file (LIBRARY_NAME charset
   INPUT libcharset/include/libcharset.h.in 
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/libcharset.h )
@@ -52,13 +43,12 @@ iconv_configure_file (LIBRARY_NAME charset
   INPUT libcharset/include/localcharset.h.build.in 
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/localcharset.h )
 
-# Dirty fix for MinGW
+# Fix for MinGW
 if ( MINGW )
   add_definitions ( -DELOOP=0 -DHAVE_DECL_STRERROR_R=0 )
-  configure_file ( srclib/alloca.in.h ${CMAKE_CURRENT_SOURCE_DIR}/srclib/alloca.h )
 endif ()
 
-include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} include srclib )
+include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} include )
 add_definitions ( -Dset_relocation_prefix=libcharset_set_relocation_prefix -Drelocate=libcharset_relocate -DHAVE_CONFIG_H -DINSTALLPREFIX=NULL -DNO_XMALLOC -DBUILDING_LIBCHARSET -DINSTALLDIR="" -DLIBDIR="" -DENABLE_RELOCATABLE=1 -DIN_LIBRARY )
 
 # libcharset
@@ -67,10 +57,7 @@ set (SRC_LIBCHARSET
 )
 
 add_library ( charset STATIC ${SRC_LIBCHARSET} )
-if ( NOT MSVC )
-  target_compile_options (charset PRIVATE -DBUILDING_DLL)
-endif()
-target_compile_options (charset PRIVATE -DBUILDING_LIBCHARSET)
+target_compile_definitions (charset PRIVATE BUILDING_LIBCHARSET)
 
 # libiconv
 set ( SRC_LIBICONV
@@ -79,7 +66,7 @@ set ( SRC_LIBICONV
 
 add_library ( iconv STATIC ${SRC_LIBICONV} )
 target_link_libraries ( iconv charset )
-set_target_properties ( iconv PROPERTIES COMPILE_FLAGS -DBUILDING_LIBICONV)
+target_compile_definitions ( iconv PRIVATE BUILDING_LIBICONV)
 
 # fix library naming for Visual Studio compilers
 if(MSVC)
@@ -92,3 +79,9 @@ install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/iconv.h )
 install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/libcharset.h )
 install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/localcharset.h )
 install_data ( README AUTHORS COPYING )
+ 
+# Unit tests
+option ( BUILD_TESTING "Build unit tests" ON )
+if ( BUILD_TESTING )
+    add_subdirectory ( tests )
+endif ()
