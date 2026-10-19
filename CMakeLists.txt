@@ -56,25 +56,40 @@ set (SRC_LIBCHARSET
     libcharset/lib/localcharset.c
 )
 
-add_library ( charset STATIC ${SRC_LIBCHARSET} )
-target_compile_definitions (charset PRIVATE BUILDING_LIBCHARSET)
-
 # libiconv
 set ( SRC_LIBICONV
   lib/iconv.c
 )
 
+# --- Static libraries ---
+add_library ( charset STATIC ${SRC_LIBCHARSET} )
+target_compile_definitions (charset PRIVATE BUILDING_LIBCHARSET)
+
 add_library ( iconv STATIC ${SRC_LIBICONV} )
 target_link_libraries ( iconv charset )
 target_compile_definitions ( iconv PRIVATE BUILDING_LIBICONV)
 
-# fix library naming for Visual Studio compilers
+# --- Shared libraries ---
+add_library ( charset_shared SHARED ${SRC_LIBCHARSET} )
+target_compile_definitions (charset_shared PRIVATE BUILDING_LIBCHARSET BUILDING_DLL DLL_EXPORT)
+
+add_library ( iconv_shared SHARED ${SRC_LIBICONV} )
+target_link_libraries ( iconv_shared charset_shared )
+target_compile_definitions ( iconv_shared PRIVATE BUILDING_LIBICONV BUILDING_DLL DLL_EXPORT)
+
+# fix library naming
+set_target_properties ( iconv_shared    PROPERTIES OUTPUT_NAME "iconv" )
+set_target_properties ( charset_shared  PROPERTIES OUTPUT_NAME "charset" )
+
 if(MSVC)
     set_target_properties ( iconv   PROPERTIES OUTPUT_NAME "libiconv" )
     set_target_properties ( charset PROPERTIES OUTPUT_NAME "libcharset" )
+else()
+    set_target_properties ( iconv   PROPERTIES OUTPUT_NAME "iconv" )
+    set_target_properties ( charset PROPERTIES OUTPUT_NAME "charset" )
 endif()
 
-install_library ( iconv charset )
+install_library ( iconv charset iconv_shared charset_shared )
 install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/iconv.h )
 install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/libcharset.h )
 install_header ( ${CMAKE_CURRENT_BINARY_DIR}/include/localcharset.h )
